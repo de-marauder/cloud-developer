@@ -1,6 +1,7 @@
 import express from 'express';
 import bodyParser from 'body-parser';
-import {filterImageFromURL, deleteLocalFiles} from './util/util';
+import { filterImageFromURL, deleteLocalFiles } from './util/util';
+import fs from 'fs';
 
 (async () => {
 
@@ -9,7 +10,7 @@ import {filterImageFromURL, deleteLocalFiles} from './util/util';
 
   // Set the network port
   const port = process.env.PORT || 8082;
-  
+
   // Use the body parser middleware for post requests
   app.use(bodyParser.json());
 
@@ -29,18 +30,54 @@ import {filterImageFromURL, deleteLocalFiles} from './util/util';
 
   /**************************************************************************** */
 
-  //! END @TODO1
+  app.get( "/filteredimage", async ( req, res ) => {
+    const urlRegex = '^(?!mailto:)(?:(?:http|https|ftp)://)(?:\\S+(?::\\S*)?@)?(?:(?:(?:[1-9]\\d?|1\\d\\d|2[01]\\d|22[0-3])(?:\\.(?:1?\\d{1,2}|2[0-4]\\d|25[0-5])){2}(?:\\.(?:[0-9]\\d?|1\\d\\d|2[0-4]\\d|25[0-4]))|(?:(?:[a-z\\u00a1-\\uffff0-9]+-?)*[a-z\\u00a1-\\uffff0-9]+)(?:\\.(?:[a-z\\u00a1-\\uffff0-9]+-?)*[a-z\\u00a1-\\uffff0-9]+)*(?:\\.(?:[a-z\\u00a1-\\uffff]{2,})))|localhost)(?::\\d{2,5})?(?:(/|\\?|#)[^\\s]*)?$'
+    try {
+      // Get image_url
+      const imageURL = req.query.image_url;
+
+      // Validate URL
+      if (imageURL.match(new RegExp(urlRegex, 'i'))) {
+
+        // Filter image URL
+        const file = await filterImageFromURL(imageURL);
+        
+        // Send file with response
+        res.sendFile(file, (err)=>{
+          if (err) {
+            res.send(`Error while sending File ${err}`)
+          }
+          
+          // Delete local files
+          const __dirname__ = __dirname + '/util/tmp/' // gets directory path
+          const files = fs.readdirSync(__dirname__).map((file)=>{
+            return __dirname__ + file
+          }); // Creates list of absolute paths to files in './util/tmp/'
   
+          deleteLocalFiles(files); // delete files
+        });
+
+
+      } else {
+        res.send("Your URL is not valid")
+      }
+    } catch (e) {
+      res.send(`There was an error. \n${e}`)
+    }
+  } );
+
+  //! END @TODO1
+
   // Root Endpoint
   // Displays a simple message to the user
-  app.get( "/", async ( req, res ) => {
+  app.get("/", async (req, res) => {
     res.send("try GET /filteredimage?image_url={{}}")
-  } );
-  
+  });
+
 
   // Start the Server
-  app.listen( port, () => {
-      console.log( `server running http://localhost:${ port }` );
-      console.log( `press CTRL+C to stop server` );
-  } );
+  app.listen(port, () => {
+    console.log(`server running http://localhost:${port}`);
+    console.log(`press CTRL+C to stop server`);
+  });
 })();
