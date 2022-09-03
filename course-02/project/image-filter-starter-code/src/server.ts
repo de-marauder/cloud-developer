@@ -31,38 +31,39 @@ import fs from 'fs';
   /**************************************************************************** */
 
   app.get( "/filteredimage", async ( req, res ) => {
-    const urlRegex = '^(?!mailto:)(?:(?:http|https|ftp)://)(?:\\S+(?::\\S*)?@)?(?:(?:(?:[1-9]\\d?|1\\d\\d|2[01]\\d|22[0-3])(?:\\.(?:1?\\d{1,2}|2[0-4]\\d|25[0-5])){2}(?:\\.(?:[0-9]\\d?|1\\d\\d|2[0-4]\\d|25[0-4]))|(?:(?:[a-z\\u00a1-\\uffff0-9]+-?)*[a-z\\u00a1-\\uffff0-9]+)(?:\\.(?:[a-z\\u00a1-\\uffff0-9]+-?)*[a-z\\u00a1-\\uffff0-9]+)*(?:\\.(?:[a-z\\u00a1-\\uffff]{2,})))|localhost)(?::\\d{2,5})?(?:(/|\\?|#)[^\\s]*)?$'
+
+    // const urlRegex = '^(?!mailto:)(?:(?:http|https|ftp)://)(?:\\S+(?::\\S*)?@)?(?:(?:(?:[1-9]\\d?|1\\d\\d|2[01]\\d|22[0-3])(?:\\.(?:1?\\d{1,2}|2[0-4]\\d|25[0-5])){2}(?:\\.(?:[0-9]\\d?|1\\d\\d|2[0-4]\\d|25[0-4]))|(?:(?:[a-z\\u00a1-\\uffff0-9]+-?)*[a-z\\u00a1-\\uffff0-9]+)(?:\\.(?:[a-z\\u00a1-\\uffff0-9]+-?)*[a-z\\u00a1-\\uffff0-9]+)*(?:\\.(?:[a-z\\u00a1-\\uffff]{2,})))|localhost)(?::\\d{2,5})?(?:(/|\\?|#)[^\\s]*)?$'
     try {
       // Get image_url
-      const imageURL = req.query.image_url;
-
+      const imageURL: string = req.query.image_url;
+      
       // Validate URL
-      if (imageURL.match(new RegExp(urlRegex, 'i'))) {
-
+      // if (imageURL.match(new RegExp(urlRegex, 'i'))) {
+      if (imageURL) {
+        
         // Filter image URL
         const file = await filterImageFromURL(imageURL);
         
         // Send file with response
-        res.sendFile(file, (err)=>{
+        res.status(200).sendFile(file, (err)=>{
           if (err) {
-            res.send(`Error while sending File ${err}`)
+            res.status(422).send(`Error while sending File ${err}`)
           }
           
+          console.log('correct 3')
           // Delete local files
-          const __dirname__ = __dirname + '/util/tmp/' // gets directory path
-          const files = fs.readdirSync(__dirname__).map((file)=>{
+          const __dirname__: string = __dirname + '/util/tmp/' // gets directory path
+          const files: string[] = fs.readdirSync(__dirname__).map((file)=>{
             return __dirname__ + file
           }); // Creates list of absolute paths to files in './util/tmp/'
-  
+          
           deleteLocalFiles(files); // delete files
         });
-
-
       } else {
-        res.send("Your URL is not valid")
+        res.status(422).send("Your URL is not valid")
       }
     } catch (e) {
-      res.send(`There was an error. \n${e}`)
+      res.status(422).send(`There was an error. \n${e}`)
     }
   } );
 
